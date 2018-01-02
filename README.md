@@ -8,16 +8,25 @@ is context-aware and deals with SIGINT and SIGTERM signals.
 ```go
 package main
 
-import "context"
-import "github.com/caarlos0/ctrlc"
+import (
+    "context"
+    "log"
+
+    "github.com/caarlos0/ctrlc"
+)
 
 func main() {
     ctx, cancel := context.WithTimeout(context.Backgroud(), time.Second)
     defer cancel()
-    ctrlc.Default.Run(ctx, func() error {
-        // do something
+    err := ctrlc.Default.Run(ctx, func() error {
+        // this is a task that doe something
         return nil
     })
+    // will err if context times out, if the task returns an error or if
+    // a SIGTERM or SIGINT is received (CTRL-C for example).
+    if err != nil {
+        log.Fatalln(err)
+    }
 }
 ```
 
