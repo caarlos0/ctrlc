@@ -1,7 +1,7 @@
 # ctrlc
 
-CTRL-C is a Go library that provides an easy way to handle
-interrups and context timeouts and cancelations on your cli.
+CTRL-C is a Go library that provides an easy way of having a task that
+is context-aware and deals with SIGINT and SIGTERM signals.
 
 ## Usage
 
