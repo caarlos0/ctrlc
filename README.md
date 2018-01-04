@@ -5,28 +5,18 @@ is context-aware and deals with SIGINT and SIGTERM signals.
 
 ## Usage
 
-```go
-package main
+Check the [_examples](/_examples) folder.
 
-import (
-    "context"
-    "log"
+You can run it like this:
 
-    "github.com/caarlos0/ctrlc"
-)
+```sh
+$ go run _examples/main.go
+# will fail because the last task returns an error
 
-func main() {
-    ctx, cancel := context.WithTimeout(context.Backgroud(), time.Second)
-    defer cancel()
-    err := ctrlc.Default.Run(ctx, func() error {
-        // this is a task that doe something
-        return nil
-    })
-    // will err if context times out, if the task returns an error or if
-    // a SIGTERM or SIGINT is received (CTRL-C for example).
-    if err != nil {
-        log.Fatalln(err)
-    }
-}
+$ go run _examples/main.go -timeout 1s
+# will fail due to context timeout
+
+$ go run _examples/main.go
+# press ctrl-c
+# will cancel the context due to interrupt and error
 ```
-
