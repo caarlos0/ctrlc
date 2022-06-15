@@ -8,65 +8,65 @@ import (
 	"syscall"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/sync/errgroup"
 )
 
 func TestCtrlcOK(t *testing.T) {
-	assert.NoError(t, New().Run(context.Background(), func() error {
+	if err := New().Run(context.Background(), func() error {
 		return nil
-	}))
+	}); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestCtrlcErrors(t *testing.T) {
-	var err = errors.New("some error")
-	assert.EqualError(t, New().Run(context.Background(), func() error {
+	err := errors.New("some error")
+	if err != New().Run(context.Background(), func() error {
 		return err
-	}), err.Error())
+	}) {
+		t.Fatalf("expected a different error, got: %v", err)
+	}
 }
 
 func TestCtrlcTimeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Nanosecond)
 	defer cancel()
-	assert.EqualError(t, New().Run(ctx, func() error {
+	err := New().Run(ctx, func() error {
 		t.Log("slow task...")
 		time.Sleep(time.Minute)
 		return nil
-	}), "context deadline exceeded")
+	})
+	if err == nil {
+		t.Fatalf("expected an error, got nil")
+	}
+	if err.Error() != "context deadline exceeded" {
+		t.Fatalf("expected a different error, got: %v", err)
+	}
 }
 
 func TestCtrlcSignals(t *testing.T) {
+	t.Parallel()
 	for _, signal := range []os.Signal{syscall.SIGINT, syscall.SIGTERM} {
 		signal := signal
-		t.Run(signal.String(), func(tt *testing.T) {
-			tt.Parallel()
-			var h = New()
-			var errs = make(chan error, 1)
+		t.Run(signal.String(), func(t *testing.T) {
+			t.Parallel()
+			h := New()
+			errs := make(chan error, 1)
 			go func() {
 				errs <- h.Run(context.Background(), func() error {
-					tt.Log("slow task...")
+					t.Log("slow task...")
 					time.Sleep(time.Minute)
 					return nil
 				})
 			}()
 			h.signals <- signal
-			assert.EqualError(tt, <-errs, fmt.Sprintf("received: %s", signal))
+			err := <-errs
+			if err == nil {
+				t.Fatalf("expected an error, got nil")
+			}
+			eerr := fmt.Sprintf("received: %s", signal)
+			if err.Error() != eerr {
+				t.Fatalf("expected a different error, got: %v, expected: %v", err, eerr)
+			}
 		})
 	}
-}
-
-func BenchmarkCtrlc(b *testing.B) {
-	var task Task = func() error {
-		return nil
-	}
-	var h = New()
-	var ctx = context.Background()
-	var wg errgroup.Group
-	for i := 0; i < 10000; i++ {
-		wg.Go(func() error {
-			return h.Run(ctx, task)
-		})
-	}
-	assert.NoError(b, wg.Wait())
 }
