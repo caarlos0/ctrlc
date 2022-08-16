@@ -3,7 +3,6 @@ package ctrlc
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"syscall"
 	"testing"
@@ -63,7 +62,10 @@ func TestCtrlcSignals(t *testing.T) {
 			if err == nil {
 				t.Fatalf("expected an error, got nil")
 			}
-			eerr := fmt.Sprintf("received: %s", signal)
+			if !errors.As(err, &ErrorCtrlC{}) {
+				t.Fatalf("should have been a ErrorCtrlC, got %v", err)
+			}
+			eerr := ErrorCtrlC{signal}.Error()
 			if err.Error() != eerr {
 				t.Fatalf("expected a different error, got: %v, expected: %v", err, eerr)
 			}
