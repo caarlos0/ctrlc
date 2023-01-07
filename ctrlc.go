@@ -48,6 +48,7 @@ func (c *Ctrlc) Run(ctx context.Context, task Task) error {
 		c.errs <- task()
 	}()
 	signal.Notify(c.signals, syscall.SIGINT, syscall.SIGTERM)
+	defer signal.Stop(c.signals)
 	select {
 	case err := <-c.errs:
 		return err
